@@ -1,2 +1,2 @@
-# victoriametrics-grafana-oncall
-Set up victoriametrics grafana oncall
+# Настройка связки victoriametrics + grafana + oncall
+
