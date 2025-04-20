@@ -51,7 +51,121 @@ Grafana может отправлять алерты в OnCall через **webh
 4. Отправляется уведомление в Telegram.
 5. Если дежурный не реагирует — алерт эскалируется следующему по очереди.
 
+---
+
+## Установка необходимых компонентов
+
+Для настройки системы оповещений с OnCall, VictoriaMetrics и Grafana через Kubernetes, используем **Kind** для создания кластера Kubernetes и Helm-чарты для установки необходимых компонентов.
+
+### Шаг 1: Создание Kubernetes кластера через Kind
+
+Создайте кластер Kubernetes с помощью Kind:
+
+```bash
+kind create cluster --name victoria-metrics-oncall
+```
+
+### Шаг 2: Установка VictoriaMetrics
+
+Для установки **VictoriaMetrics** в Kubernetes, создайте файл настроек `victoriametrics-values.yaml`:
+
+**Файл: `victoriametrics-values.yaml`**
+
+```yaml
+vmcluster:
+  replicaCount: 1
+  retentionPeriod: "1"
+  storage:
+    dataVolume:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+          
+# Отключаем установку Grafana
+grafana:
+  enabled: false
+```
+
+Теперь установите VictoriaMetrics с использованием Helm:
+
+```bash
+helm install victoria-metrics victoria-metrics/victoria-metrics-cluster \
+  --namespace monitoring \
+  --create-namespace \
+  -f victoriametrics-values.yaml
+```
+
+### Шаг 3: Установка Grafana с плагином OnCall
+
+Создайте файл настроек для **Grafana** с плагином **OnCall**:
+
+**Файл: `grafana-values.yaml`**
+
+```yaml
+adminUser: admin
+adminPassword: admin
+
+plugins:
+  - grafana-oncall-app
+
+grafana.ini:
+  plugins:
+    allow_loading_unsigned_plugins: grafana-oncall-app
+  oncall:
+    enabled: true
+
+service:
+  type: NodePort
+
+persistence:
+  enabled: false
+```
+
+Установите **Grafana** с плагином OnCall:
+
+```bash
+helm install grafana grafana/grafana \
+  --namespace monitoring \
+  --create-namespace \
+  -f grafana-values.yaml
+```
+
+### Шаг 4: Установка OnCall как отдельного сервиса
+
+Если вы хотите установить **OnCall** как отдельный сервис (не через плагин в Grafana), создайте файл настроек `oncall-values.yaml`:
+
+**Файл: `oncall-values.yaml`**
+
+```yaml
+grafana:
+  enabled: false
+
+django:
+  secretKey: "YOUR_SECRET_KEY_HERE"
+
+postgresql:
+  auth:
+    postgresPassword: "oncallpass"
+```
+
+> ⚠️ Генерируйте `secretKey` заранее: `openssl rand -hex 32`
+
+Теперь установите **OnCall** с помощью Helm:
+
+```bash
+helm install grafana-oncall oncall/oncall \
+  --namespace oncall \
+  --create-namespace \
+  -f oncall-values.yaml
+```
+
+
 ### Заключение
 
 Связка **OnCall + VictoriaMetrics + Grafana** — это мощный инструмент для обеспечения бесперебойной работы инфраструктуры. 
 OnCall закрывает критически важный аспект — управление ответственностью за инциденты и коммуникацию, делая процесс реагирования прозрачным, предсказуемым и управляемым.
+
+Теперь, настроив эти компоненты, вы можете эффективно использовать их для мониторинга, управления инцидентами и автоматического оповещения в случае возникновения проблем с вашими сервисами.
