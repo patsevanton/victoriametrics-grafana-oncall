@@ -82,9 +82,9 @@ grafana:
 Теперь установите VictoriaMetrics с использованием Helm:
 
 ```bash
-helm repo add victoria-metrics https://victoriametrics.github.io/helm-charts/
+helm repo add vm https://victoriametrics.github.io/helm-charts/
 helm repo update
-helm install victoria-metrics victoria-metrics/victoria-metrics-k8s-stack \
+helm install vmks vm/victoria-metrics-k8s-stack \
   --namespace monitoring \
   --create-namespace \
   -f victoriametrics-values.yaml
