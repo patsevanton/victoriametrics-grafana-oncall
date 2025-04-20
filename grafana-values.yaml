@@ -1,0 +1,9 @@
+adminUser: admin
+adminPassword: admin
+plugins:
+  - grafana-oncall-app
+grafana.ini:
+  plugins:
+    allow_loading_unsigned_plugins: grafana-oncall-app
+  oncall:
+    enabled: true

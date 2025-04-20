@@ -25,8 +25,8 @@
 1. Метрики поступают в VictoriaMetrics.
 2. В Grafana настраиваются дашборды.
 3. Алерты настраиваются кодом.
-3. Alertmanager отправляет алерты в OnCall через Webhook-интеграцию.
-4. OnCall маршрутизирует алерты в соответствии с дежурствами и политиками оповещений.
+4. Alertmanager отправляет алерты в OnCall через Webhook-интеграцию.
+5. OnCall маршрутизирует алерты в соответствии с дежурствами и политиками оповещений.
 
 ### Alertmanager как источник алертов
 
@@ -74,18 +74,6 @@ kind create cluster --name victoria-metrics-oncall
 **Файл: `victoriametrics-values.yaml`**
 
 ```yaml
-vmcluster:
-  replicaCount: 1
-  retentionPeriod: "1"
-  storage:
-    dataVolume:
-      volumeClaimTemplate:
-        spec:
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 10Gi
-          
 # Отключаем установку Grafana
 grafana:
   enabled: false
@@ -94,7 +82,9 @@ grafana:
 Теперь установите VictoriaMetrics с использованием Helm:
 
 ```bash
-helm install victoria-metrics victoria-metrics/victoria-metrics-cluster \
+helm repo add victoria-metrics https://victoriametrics.github.io/helm-charts/
+helm repo update
+helm install victoria-metrics victoria-metrics/victoria-metrics-k8s-stack \
   --namespace monitoring \
   --create-namespace \
   -f victoriametrics-values.yaml
@@ -109,26 +99,20 @@ helm install victoria-metrics victoria-metrics/victoria-metrics-cluster \
 ```yaml
 adminUser: admin
 adminPassword: admin
-
 plugins:
   - grafana-oncall-app
-
 grafana.ini:
   plugins:
     allow_loading_unsigned_plugins: grafana-oncall-app
   oncall:
     enabled: true
-
-service:
-  type: NodePort
-
-persistence:
-  enabled: false
 ```
 
 Установите **Grafana** с плагином OnCall:
 
 ```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
 helm install grafana grafana/grafana \
   --namespace monitoring \
   --create-namespace \
@@ -144,10 +128,8 @@ helm install grafana grafana/grafana \
 ```yaml
 grafana:
   enabled: false
-
 django:
   secretKey: "YOUR_SECRET_KEY_HERE"
-
 postgresql:
   auth:
     postgresPassword: "oncallpass"
@@ -158,7 +140,9 @@ postgresql:
 Теперь установите **OnCall** с помощью Helm:
 
 ```bash
-helm install grafana-oncall oncall/oncall \
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana-oncall grafana/oncall \
   --namespace oncall \
   --create-namespace \
   -f oncall-values.yaml

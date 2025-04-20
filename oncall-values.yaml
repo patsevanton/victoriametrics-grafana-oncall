@@ -1,0 +1,7 @@
+grafana:
+  enabled: false
+django:
+  secretKey: "YOUR_SECRET_KEY_HERE"
+postgresql:
+  auth:
+    postgresPassword: "oncallpass"
